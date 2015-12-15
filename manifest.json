@@ -1,0 +1,23 @@
+{
+  "name": "Avgr",
+  "version": "0.0.1",
+  "manifest_version": 2,
+  "description": "Shows a class average on the Instructure Canvas CMS",
+  "homepage_url": "https://github.com/kbohinski/avgr",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "default_locale": "en",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.instructure.com/*"
+      ],
+      "js": [
+        "src/inject/inject.js"
+      ]
+    }
+  ]
+}
