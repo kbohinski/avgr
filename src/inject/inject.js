@@ -31,6 +31,7 @@ chrome.extension.sendMessage({}, function (response) {
                 var groups = [];
                 var maxs = [];
                 var avgs = [];
+                var predictor = 0;
 
                 /* Get assignment groups and group weights */
                 for (i = 0; i < categorys.length; i++) {
@@ -103,17 +104,26 @@ chrome.extension.sendMessage({}, function (response) {
 
                 /* Calculates weighting */
                 var finalAvg = 0;
+                var count = 0;
                 for (i = 0; i < groupTotals.length; i++) {
                     if (!isNaN(groupTotals[i])) {
                         finalAvg += (groupTotals[i] * groupWeights[i]);
-                    } else {
-                        /* Assume people will do well on ungraded sections :) */
-                        finalAvg += (100 * groupWeights[i]);
+                        predictor += groupTotals[i];
+                        count += 1;
+                    }
+                }
+
+                predictor /= count;
+
+                for (i = 0; i < groupTotals.length; i++) {
+                    if (isNaN(groupTotals[i])) {
+                        /* Assume people will do average on ungraded sections :) */
+                        finalAvg += (predictor * groupWeights[i]);
                     }
                 }
 
                 right.innerHTML = "<p class=\"student_assignment final_grade\" style=\"font-size: 1.2em;\">Class Average: " + finalAvg.toFixed(2) + "%</p>" + right.innerHTML;
-                right.innerHTML += "<br>Note: Class Average assumes people will do perfectly on ungraded/future assignments.";
+                right.innerHTML += "<br>Note: Avgr assumes people will do average on ungraded/future assignments.";
             }
 
         }
