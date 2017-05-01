@@ -16,7 +16,8 @@
         "https://*.instructure.com/*"
       ],
       "js": [
-        "src/inject/inject.js"
+        "src/inject/inject.js",
+        "jquery-3.2.1.min.js"
       ]
     }
   ]

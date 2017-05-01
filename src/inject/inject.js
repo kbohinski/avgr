@@ -1,6 +1,6 @@
 /**
  * @author Kevin Bohinski <bohinsk1@tcnj.edu>
- * @version 1.0
+ * @version 2.0
  * @since 2015-12-14
  *
  * Project Name:  Avgr
@@ -8,124 +8,109 @@
  *
  * Filename:      inject/inject.js
  * Description:   JS Injection that calculates class average and displays it.
- * Last Modified: 2015-12-14
+ * Last Modified: 2017-4-30
  *
- * Copyright (c) 2015 Kevin Bohinski. All rights reserved.
+ * Copyright (c) 2015-2017 Kevin Bohinski. All rights reserved.
  */
 
+'use strict'
+
 chrome.extension.sendMessage({}, function (response) {
-    var readyStateCheckInterval = setInterval(function () {
-        if (document.readyState === "complete") {
-            clearInterval(readyStateCheckInterval);
+  let readyStateCheckInterval = setInterval(function () {
+    if (document.readyState === 'complete') {
+      clearInterval(readyStateCheckInterval)
 
-            /* If they are on a grade page, then do work */
-            if (document.URL.search("grades") != -1) {
-                var right = document.getElementById("right-side");
-                var categorys = document.getElementsByClassName("group_total");
-                var assignments = document.getElementsByClassName("assignment_graded");
+      /* If they are on a grade page, then do work */
+      if (document.URL.search('grades') !== -1) {
+        let el = document.getElementById.bind(document)
 
-                /* Because JS dosent have maps.... */
-                var groupWeights = [];
-                var groupNames = [];
-                var groupTotals = [];
-                var groups = [];
-                var maxs = [];
-                var avgs = [];
-                var predictor = 0;
-
-                /* Get assignment groups and group weights */
-                for (i = 0; i < categorys.length; i++) {
-                    var html = categorys[i].innerHTML;
-                    var tmp = html.split(">");
-                    var name = tmp[1];
-                    name = name.split("<");
-                    name = name[0].trim();
-                    tmp = html.split("weight\">");
-                    tmp = tmp[1].split("<");
-                    var weight = parseFloat(tmp[0].trim());
-                    weight /= 100;
-                    groupNames.push(name);
-                    groupWeights.push(weight);
-                }
-
-                /* Get assignment info */
-                /*
-                 * tables are:
-                 * -Submission
-                 * -Grade Info
-                 * -Comments (Can ignore)
-                 * -Rubric (Can ignore)
-                 */
-                for (i = 0; i < assignments.length; i += 4) {
-                    /* Get HTML */
-                    var gradeHtml = assignments[i].innerHTML;
-                    var infoHtml = assignments[i + 1].innerHTML;
-
-                    /* Elements needed from gradeHtml */
-                    var max = 0;
-                    var group = "";
-
-                    /* Elements needed from infoHtml */
-                    var avg = 0;
-
-                    tmp = gradeHtml.split("context\">");
-                    tmp = tmp[1].split("<");
-                    group = tmp[0].trim();
-
-                    tmp = gradeHtml.split("points_possible\">");
-                    tmp = tmp[1].split("<");
-                    max = parseFloat(tmp[0].trim());
-
-                    if (infoHtml.trim() != "") {
-                        tmp = infoHtml.split("Mean:");
-                        tmp = tmp[1].split("<");
-                        avg = parseFloat(tmp[0].trim());
-                    }
-
-                    groups.push(group);
-                    maxs.push(max);
-                    avgs.push(avg);
-                }
-
-                /* Calculates percentages for each group */
-                for (i = 0; i < groupNames.length; i++) {
-                    var groupSum = 0;
-                    var groupMax = 0;
-                    for (j = 0; j < avgs.length; j++) {
-                        if (groups[j] === groupNames[i]) {
-                            groupSum += avgs[j];
-                            groupMax += maxs[j];
-                        }
-                    }
-                    var groupAvg = groupSum / groupMax;
-                    groupAvg *= 100;
-                    groupTotals.push(groupAvg);
-                }
-
-                /* Calculates weighting */
-                var finalAvg = 0;
-                var count = 0;
-                for (i = 0; i < groupTotals.length; i++) {
-                    if (!isNaN(groupTotals[i])) {
-                        finalAvg += (groupTotals[i] * groupWeights[i]);
-                        predictor += groupTotals[i];
-                        count += 1;
-                    }
-                }
-
-                predictor /= count;
-
-                for (i = 0; i < groupTotals.length; i++) {
-                    if (isNaN(groupTotals[i])) {
-                        /* Assume people will do average on ungraded sections :) */
-                        finalAvg += (predictor * groupWeights[i]);
-                    }
-                }
-
-                right.innerHTML = "<p class=\"student_assignment final_grade\" style=\"font-size: 1.2em;\">Class Average: " + finalAvg.toFixed(2) + "%</p>" + right.innerHTML;
-                right.innerHTML += "<br>Note: Avgr assumes people will do average on ungraded/future assignments.";
-            }
-
+        let right = el('right-side')
+        let assignments = $("[id^='submission'],[id^='score_details']")
+        let unweighted = el('assignments-not-weighted').innerHTML.includes('Course assignments are not weighted')
+        let categories = []
+        if (!unweighted) {
+          categories = el('assignments-not-weighted').getElementsByTagName('tbody')[0].getElementsByTagName('tr')
+        } else {
+          categories = ['all', 'all']
         }
-    }, 10);
-});
+
+        let groups = {}
+        let numAssignments = 0
+        let totalPts = 0
+
+        // Ignore last to skip total row
+        for (let i = 0; i < categories.length - 1; i++) {
+          if (unweighted) {
+            groups['all'] = {
+              'weight': 1,
+              'avgs': [],
+              'total': 0,
+              'avg': 0
+            }
+            continue
+          }
+          groups[categories[i].getElementsByTagName('th')[0].innerText.trim()] = {
+            'weight': (parseFloat(categories[i].getElementsByTagName('td')[0].innerText.trim()) / 100),
+            'avgs': [],
+            'total': 0,
+            'avg': 0
+          }
+        }
+
+        // Need group, avg, and out of
+        let hasAvgs = false
+        for (let i = 0; i < assignments.length; i++) {
+          if (!assignments[i].classList.contains('assignment_graded')) {
+            continue
+          }
+          if (assignments[i + 1].classList.contains('score_details_table')) {
+            hasAvgs = true
+          }
+          let group = assignments[i].getElementsByClassName('context')[0].innerHTML.trim()
+          if (unweighted) {
+            group = 'all'
+          }
+          let avg = parseFloat(assignments[i + 1].getElementsByTagName('td')[0].innerText.trim().split(' ').pop())
+          let outOf = parseFloat(assignments[i].getElementsByClassName('possible points_possible')[0].innerText.trim())
+          if (isNaN(avg) || isNaN(outOf)) {
+            continue
+          }
+          groups[group].avgs.push(avg)
+          groups[group].total += outOf
+          numAssignments++
+          totalPts += outOf
+        }
+
+        for (let key in groups) {
+          if (groups[key].weight === 0 || groups[key].avgs.length === 0) {
+            groups[key].avg = 1
+            continue
+          }
+          let sum = groups[key].avgs.reduce((a, b) => a + b, 0)
+          groups[key].avg = (sum / groups[key].total) * 100
+        }
+
+        let classAvg = 0
+        for (let key in groups) {
+          classAvg += (groups[key].avg * groups[key].weight)
+        }
+
+        console.log(groups)
+
+        let output = ''
+        output += '<h3>avgr report</h3>'
+        if (hasAvgs) {
+          output += '<p><h4>class avg: ' + classAvg.toFixed(2) + '%</h4></p>'
+          output += '<p><h4>num assignments: ' + numAssignments + '</h4></p>'
+          output += '<p><h4>num total points: ' + totalPts + '</h4></p>'
+        } else {
+          output += '<p><h4>your prof disables averages... boo</h4></p>'
+        }
+        output += '<br><br>'
+
+        right.innerHTML = output + right.innerHTML
+      }
+
+    }
+  }, 10)
+})
