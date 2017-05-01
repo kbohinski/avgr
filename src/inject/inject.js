@@ -47,7 +47,7 @@ chrome.extension.sendMessage({}, function (response) {
               'total': 0,
               'avg': 0
             }
-            continue
+            break
           }
           groups[categories[i].getElementsByTagName('th')[0].innerText.trim()] = {
             'weight': (parseFloat(categories[i].getElementsByTagName('td')[0].innerText.trim()) / 100),
