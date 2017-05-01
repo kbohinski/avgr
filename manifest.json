@@ -1,6 +1,6 @@
 {
   "name": "Avgr",
-  "version": "0.0.1",
+  "version": "2.0.0",
   "manifest_version": 2,
   "description": "Shows a class average on the Instructure Canvas CMS",
   "homepage_url": "https://github.com/kbohinski/avgr",
