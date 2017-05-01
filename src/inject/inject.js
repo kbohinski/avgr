@@ -83,7 +83,7 @@ chrome.extension.sendMessage({}, function (response) {
 
         for (let key in groups) {
           if (groups[key].weight === 0 || groups[key].avgs.length === 0) {
-            groups[key].avg = 1
+            groups[key].avg = 100
             continue
           }
           let sum = groups[key].avgs.reduce((a, b) => a + b, 0)
