@@ -23,6 +23,14 @@ chrome.extension.sendMessage({}, function (response) {
       /* If they are on a grade page, then do work */
       if (document.URL.search('grades') !== -1) {
         let el = document.getElementById.bind(document)
+        
+        function parsestr(str) { //fixes chararcters such as & in the category messing up the extension
+          var parser = new DOMParser;
+          var dom = parser.parseFromString(
+            '<!doctype html><body>' + str,
+            'text/html');
+          return dom.body.textContent;
+        }
 
         let right = el('right-side')
         let assignments = $("[id^='submission'],[id^='score_details']")
@@ -66,7 +74,7 @@ chrome.extension.sendMessage({}, function (response) {
           if (assignments[i + 1].classList.contains('score_details_table')) {
             hasAvgs = true
           }
-          let group = assignments[i].getElementsByClassName('context')[0].innerHTML.trim()
+          let group = parsestr(assignments[i].getElementsByClassName('context')[0].innerHTML.trim())
           if (unweighted) {
             group = 'all'
           }
